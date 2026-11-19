@@ -3,422 +3,181 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manjack Ruko Sayur - Kasir POS</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<script>
-tailwind.config={theme:{extend:{fontFamily:{sans:['Plus Jakarta Sans','sans-serif'],mono:['JetBrains Mono','monospace']},colors:{brand:{50:'#f0fdf4',100:'#dcfce7',600:'#16a34a',700:'#15803d',800:'#166534',900:'#052e16'}}}}}
-</script>
+<title>Manjack Kasir</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16a34a">
 <style>
-@media print{ .no-print{display:none!important} .print-only{display:block!important} body{background:white} }
-.print-only{display:none}
+*{box-sizing:border-box;margin:0;padding:0;font-family:sans-serif}
+body{background:#f0fdf4;padding:10px}
+.header{background:#16a34a;color:white;padding:15px;border-radius:15px;text-align:center;margin-bottom:15px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:white;padding:15px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);text-align:center}
+.card h3{font-size:14px;margin:5px 0}
+.card .price{color:#16a34a;font-weight:bold;font-size:12px}
+.btn{background:#16a34a;color:white;border:none;padding:10px 15px;border-radius:8px;width:100%;margin-top:8px;font-weight:bold}
+.btn:active{background:#15803d}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:99;padding:20px}
+.modal.active{display:flex}
+.modal-box{background:white;border-radius:15px;padding:20px;width:100%;max-width:400px}
+.qty-row{display:flex;gap:10px;margin:10px 0}
+.qty-btn{width:40px;height:40px;border-radius:8px;border:1px solid #16a34a;background:white;font-size:20px}
+.input-qty{flex:1;text-align:center;font-size:18px;border:2px solid #16a34a;border-radius:8px}
+.quick{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0}
+.quick button{background:#dcfce7;border:1px solid #16a34a;padding:6px 12px;border-radius:20px;font-size:12px}
+.cart{background:white;border-radius:15px;padding:15px;margin-top:15px;position:sticky;bottom:10px}
+.cart-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:13px}
+.total{font-size:18px;font-weight:bold;color:#16a34a;margin:10px 0}
 </style>
 </head>
-<body class="bg-[#f0fdf4] text-[#052e16] font-sans min-h-screen">
-<!-- HEADER -->
-<header class="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-green-200">
-  <div class="max-w-[1280px] mx-auto px-4 md:px-6 h-[64px] flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-[#16a34a] text-white grid place-items-center font-extrabold">M</div>
-      <div>
-        <div class="font-extrabold leading-none">MANJACK</div>
-        <div class="text-[11px] tracking-[0.2em] text-green-700 font-bold">RUKO SAYUR • POS</div>
-      </div>
-    </div>
-    <div class="flex items-center gap-2">
-      <button onclick="openHistory()" class="no-print h-9 px-4 rounded-full border border-green-200 bg-white text-sm font-bold hover:bg-green-50">Riwayat Omzet</button>
-      <button onclick="openSettings()" class="no-print h-9 px-4 rounded-full bg-[#16a34a] text-white text-sm font-bold hover:bg-[#15803d]">Atur Harga & Stok</button>
-    </div>
-  </div>
-</header>
-
-<main class="max-w-[1280px] mx-auto px-4 md:px-6 py-6 grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-6">
-  <!-- LEFT: PRODUCT GRID -->
-  <section>
-    <div class="flex items-end justify-between mb-4">
-      <div>
-        <h1 class="text-[28px] font-extrabold tracking-tight">Produk Segar Hari Ini</h1>
-        <p class="text-sm text-green-800/70 mt-1">Tap produk → input ons/gram. 1 ons = 100gr. 7 ons = 700gr auto-convert.</p>
-      </div>
-      <div class="hidden md:flex items-center gap-2 text-xs font-mono">
-        <span class="px-2 py-1 rounded-full bg-white border">12 PRODUK</span>
-        <span class="px-2 py-1 rounded-full bg-[#16a34a] text-white">READY</span>
-      </div>
-    </div>
-
-    <div id="productGrid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
-
-    <div class="mt-8 p-4 rounded-[16px] bg-white border border-green-200">
-      <h3 class="font-bold text-sm">Cara Hitung Ons:</h3>
-      <div class="mt-2 grid grid-cols-3 gap-2 text-[12px] font-mono">
-        <div class="p-2 rounded-lg bg-green-50 border">1 ons = 100 gr</div>
-        <div class="p-2 rounded-lg bg-green-50 border">5 ons = 500 gr</div>
-        <div class="p-2 rounded-lg bg-green-50 border font-bold bg-[#16a34a] text-white border-[#16a34a]">7 ons = 700 gr</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- RIGHT: CART & PAYMENT -->
-  <aside class="lg:sticky lg:top-[88px] h-fit">
-    <div class="bg-white rounded-[20px] border border-green-200 shadow-[0_8px_30px_rgba(22,163,74,0.08)] overflow-hidden">
-      <div class="p-5 border-b border-green-100 flex items-center justify-between">
-        <h2 class="font-extrabold text-[18px]">Keranjang</h2>
-        <button onclick="clearCart()" class="text-xs font-bold text-red-600 hover:underline">Kosongkan</button>
-      </div>
-      <div id="cartList" class="p-3 min-h-[180px] max-h-[360px] overflow-auto space-y-2"></div>
-
-      <div class="p-5 bg-[#f7fef9] border-t border-green-100 space-y-3">
-        <div class="flex justify-between text-sm"><span class="text-green-800/60">Subtotal</span><span id="subtotalText" class="font-mono font-bold">Rp 0</span></div>
-        <div class="flex justify-between text-[18px] font-extrabold"><span>Total</span><span id="totalText" class="font-mono">Rp 0</span></div>
-
-        <div class="pt-2">
-          <label class="text-xs font-bold tracking-wide text-green-800">TUNAI CUSTOMER (Rp)</label>
-          <input id="cashInput" type="number" placeholder="mis: 100000" class="mt-1 w-full h-12 px-4 rounded-xl border-2 border-green-200 focus:border-[#16a34a] focus:outline-none font-mono text-[18px] font-bold" oninput="calcChange()">
-          <div id="changeBox" class="mt-2 hidden p-3 rounded-xl bg-[#052e16] text-white flex justify-between items-center">
-            <span class="text-xs tracking-wide">KEMBALIAN</span>
-            <span id="changeText" class="font-mono font-bold text-[18px]">Rp 0</span>
-          </div>
-          <p id="cashWarn" class="hidden mt-2 text-xs font-bold text-red-600">Tunai kurang!</p>
-        </div>
-
-        <button onclick="checkout()" class="w-full h-[52px] rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-[15px] tracking-wide">CETAK STRUK & SIMPAN</button>
-        <p class="text-[11px] text-center text-green-700/60">Struk otomatis tersimpan ke riwayat omzet (localStorage)</p>
-      </div>
-    </div>
-
-    <!-- STRUK PREVIEW -->
-    <div id="strukArea" class="print-only mt-6 bg-white p-6 rounded-xl border font-mono text-[12px] leading-[1.4]"></div>
-  </aside>
-</main>
-
-<!-- MODAL QTY -->
-<div id="qtyModal" class="fixed inset-0 z-[50] hidden">
-  <div class="absolute inset-0 bg-[#052e16]/60 backdrop-blur-[2px]" onclick="closeQty()"></div>
-  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-[440px] bg-white rounded-[20px] border border-green-200 shadow-2xl overflow-hidden">
-    <div class="p-5 border-b flex justify-between items-center">
-      <div>
-        <div id="modalName" class="font-extrabold text-[18px]">Kangkung</div>
-        <div id="modalPrice" class="text-xs font-mono text-green-700">Rp 20.000 / kg</div>
-      </div>
-      <button onclick="closeQty()" class="w-8 h-8 grid place-items-center rounded-full bg-green-50">✕</button>
-    </div>
-    <div class="p-5 space-y-4">
-      <div class="grid grid-cols-3 gap-2">
-        <button onclick="setUnit('ons')" id="btn-ons" class="unitBtn h-10 rounded-full border-2 font-bold text-sm">ONS</button>
-        <button onclick="setUnit('gram')" id="btn-gram" class="unitBtn h-10 rounded-full border-2 font-bold text-sm">GRAM</button>
-        <button onclick="setUnit('kg')" id="btn-kg" class="unitBtn h-10 rounded-full border-2 font-bold text-sm">KG</button>
-      </div>
-      <div>
-        <label class="text-xs font-bold">JUMLAH <span id="unitLabel" class="font-mono">ONS</span></label>
-        <input id="qtyInput" type="number" step="0.1" class="mt-1 w-full h-[56px] px-4 rounded-xl border-2 border-[#16a34a] text-[28px] font-mono font-bold focus:outline-none" placeholder="7" oninput="calcModal()">
-        <div class="mt-2 flex gap-2">
-          <button onclick="quickAdd(1)" class="flex-1 h-9 rounded-full bg-green-50 border font-mono text-xs font-bold">+1</button>
-          <button onclick="quickAdd(5)" class="flex-1 h-9 rounded-full bg-green-50 border font-mono text-xs font-bold">+5</button>
-          <button onclick="quickAdd(7)" class="flex-1 h-9 rounded-full bg-[#16a34a] text-white font-mono text-xs font-bold">7 ONS (700gr)</button>
-        </div>
-      </div>
-      <div class="p-3 rounded-xl bg-[#f0fdf4] border border-green-200 space-y-1 font-mono text-sm">
-        <div class="flex justify-between"><span class="text-green-700/60">Konversi</span><span id="convertText" class="font-bold">700 gr</span></div>
-        <div class="flex justify-between"><span class="text-green-700/60">Harga</span><span id="priceCalc" class="font-bold">Rp 0</span></div>
-      </div>
-      <button onclick="addToCart()" class="w-full h-12 rounded-xl bg-[#052e16] text-white font-extrabold">TAMBAH KE KERANJANG</button>
-      <p class="text-[11px] text-center text-green-700/60">Stok: <span id="stockInfo" class="font-bold">-</span> • Edit di Atur Harga & Stok</p>
-    </div>
-  </div>
+<body>
+<div class="header">
+<h2>🥬 MANJACK RUKO SAYUR</h2>
+<p>Tanjungselor - Kasir Per Ons</p>
+<p id="cartInfo">Keranjang: 0 item</p>
 </div>
 
-<!-- SETTINGS -->
-<div id="settingsModal" class="fixed inset-0 z-[50] hidden">
-  <div class="absolute inset-0 bg-[#052e16]/60" onclick="closeSettings()"></div>
-  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[96%] max-w-[640px] max-h-[90vh] overflow-auto bg-white rounded-[20px] border shadow-2xl">
-    <div class="p-5 border-b sticky top-0 bg-white flex justify-between">
-      <h3 class="font-extrabold">Atur Harga & Stok (Rp/kg)</h3>
-      <button onclick="closeSettings()" class="w-8 h-8 grid place-items-center rounded-full bg-green-50">✕</button>
-    </div>
-    <div id="settingsList" class="p-3 space-y-2"></div>
-    <div class="p-4 border-t flex gap-2">
-      <button onclick="resetDefault()" class="h-10 px-4 rounded-full border font-bold text-sm">Reset Default</button>
-      <button onclick="closeSettings()" class="flex-1 h-10 rounded-full bg-[#16a34a] text-white font-bold text-sm">Simpan & Tutup</button>
-    </div>
-  </div>
+<div class="grid" id="productGrid"></div>
+
+<div class="cart" id="cart">
+<h3>🛒 Keranjang</h3>
+<div id="cartList"><p style="color:#999;text-align:center;padding:20px">Keranjang kosong</p></div>
+<div class="total">Total: <span id="totalRp">Rp 0</span></div>
+<input id="bayarInput" type="number" placeholder="Uang pelanggan (Rp)" style="width:100%;padding:10px;border:2px solid #16a34a;border-radius:8px;margin:5px 0">
+<div id="kembalian" style="font-weight:bold;margin:5px 0"></div>
+<button class="btn" onclick="bayar()">💰 BAYAR</button>
+<button class="btn" style="background:#ef4444" onclick="kosongkan()">Kosongkan</button>
 </div>
 
-<!-- HISTORY -->
-<div id="historyModal" class="fixed inset-0 z-[50] hidden">
-  <div class="absolute inset-0 bg-[#052e16]/60" onclick="closeHistory()"></div>
-  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[96%] max-w-[560px] max-h-[85vh] overflow-auto bg-white rounded-[20px] border shadow-2xl">
-    <div class="p-5 border-b flex justify-between items-center sticky top-0 bg-white">
-      <div>
-        <h3 class="font-extrabold">Riwayat Omzet</h3>
-        <div id="omzetTotal" class="text-xs font-mono text-green-700 font-bold">Total: Rp 0</div>
-      </div>
-      <button onclick="closeHistory()" class="w-8 h-8 grid place-items-center rounded-full bg-green-50">✕</button>
-    </div>
-    <div id="historyList" class="p-3 space-y-2"></div>
-    <div class="p-3 border-t flex gap-2">
-      <button onclick="clearHistory()" class="h-10 px-4 rounded-full border border-red-200 text-red-600 font-bold text-sm">Hapus Riwayat</button>
-      <button onclick="closeHistory()" class="flex-1 h-10 rounded-full bg-[#052e16] text-white font-bold text-sm">Tutup</button>
-    </div>
-  </div>
+<div class="modal" id="modal">
+<div class="modal-box">
+<h3 id="modalName"></h3>
+<p id="modalPrice" style="color:#16a34a;font-weight:bold"></p>
+<div style="margin:10px 0">
+<label><input type="radio" name="mode" value="ons" checked onchange="updateModal()"> Per Ons</label>
+<label style="margin-left:15px"><input type="radio" name="mode" value="kg" onchange="updateModal()"> Per Kg</label>
+</div>
+<div class="qty-row">
+<button class="qty-btn" onclick="changeQty(-1)">-</button>
+<input class="input-qty" id="qtyInput" type="number" value="1" min="1" oninput="updateModal()">
+<button class="qty-btn" onclick="changeQty(1)">+</button>
+</div>
+<div class="quick">
+<button onclick="setQty(1)">1 ons</button>
+<button onclick="setQty(2)">2 ons</button>
+<button onclick="setQty(5)">5 ons</button>
+<button onclick="setQty(7)">7 ons</button>
+<button onclick="setQty(10)">10 ons=1kg</button>
+<button onclick="setQty(20)">20 ons=2kg</button>
+</div>
+<div id="konversi" style="background:#f0fdf4;padding:10px;border-radius:8px;margin:10px 0;font-weight:bold;text-align:center"></div>
+<div id="modalTotal" style="font-size:20px;font-weight:bold;color:#16a34a;text-align:center;margin:10px 0"></div>
+<button class="btn" onclick="addToCart()">Tambah ke Keranjang</button>
+<button class="btn" style="background:#999;margin-top:5px" onclick="closeModal()">Batal</button>
+</div>
 </div>
 
 <script>
-const DEFAULT_PRODUCTS = [
-  {id:'kangkung', name:'Kangkung', price:20000, stock: 50, unit:'kg', emoji:'🥬'},
-  {id:'bayam', name:'Bayam', price:18000, stock: 40, unit:'kg', emoji:'🌿'},
-  {id:'sawi-hijau', name:'Sawi Hijau', price:22000, stock: 35, unit:'kg', emoji:'🥬'},
-  {id:'sawi-putih', name:'Sawi Putih', price:20000, stock: 30, unit:'kg', emoji:'🥬'},
-  {id:'kemangi', name:'Kemangi', price:30000, stock: 20, unit:'kg', emoji:'🌱'},
-  {id:'tomat', name:'Tomat', price:25000, stock: 60, unit:'kg', emoji:'🍅'},
-  {id:'cabe-merah', name:'Cabe Merah', price:60000, stock: 25, unit:'kg', emoji:'🌶️'},
-  {id:'cabe-rawit', name:'Cabe Rawit', price:80000, stock: 20, unit:'kg', emoji:'🌶️'},
-  {id:'terong', name:'Terong', price:20000, stock: 45, unit:'kg', emoji:'🍆'},
-  {id:'timun', name:'Timun', price:18000, stock: 50, unit:'kg', emoji:'🥒'},
-  {id:'bawang-merah', name:'Bawang Merah', price:35000, stock: 30, unit:'kg', emoji:'🧅'},
-  {id:'bawang-putih', name:'Bawang Putih', price:40000, stock: 30, unit:'kg', emoji:'🧄'},
+const products=[
+{id:1,name:'Kangkung',price:20000,emoji:'🌿'},
+{id:2,name:'Bayam',price:18000,emoji:'🍃'},
+{id:3,name:'Sawi Hijau',price:22000,emoji:'🥬'},
+{id:4,name:'Sawi Putih',price:20000,emoji:'🥬'},
+{id:5,name:'Tomat',price:25000,emoji:'🍅'},
+{id:6,name:'Cabe Merah',price:60000,emoji:'🌶️'},
+{id:7,name:'Cabe Rawit',price:80000,emoji:'🌶️'},
+{id:8,name:'Bawang Merah',price:35000,emoji:'🧅'}
 ];
-
-let products = JSON.parse(localStorage.getItem('manjack_products') || 'null') || structuredClone(DEFAULT_PRODUCTS);
-let cart = [];
-let activeProduct = null;
-let activeUnit = 'ons';
-let history = JSON.parse(localStorage.getItem('manjack_history') || '[]');
-
-function saveProducts(){ localStorage.setItem('manjack_products', JSON.stringify(products)); }
-function saveHistory(){ localStorage.setItem('manjack_history', JSON.stringify(history)); }
-function formatRp(n){ return 'Rp ' + Math.round(n).toLocaleString('id-ID'); }
-
+let cart=[];
+let currentProduct=null;
 function renderProducts(){
-  const grid = document.getElementById('productGrid');
-  grid.innerHTML = products.map(p => `
-    <div class="group bg-white rounded-[18px] border border-green-200 p-3 hover:border-[#16a34a] hover:shadow-[0_8px_20px_rgba(22,163,74,0.12)] transition-all cursor-pointer flex flex-col" onclick="openQty('${p.id}')">
-      <div class="flex justify-between items-start">
-        <div class="w-10 h-10 rounded-full bg-[#f0fdf4] border border-green-100 grid place-items-center text-[20px]">${p.emoji}</div>
-        <span class="text-[10px] font-mono px-2 py-1 rounded-full ${p.stock<5?'bg-red-50 text-red-600 border border-red-200':'bg-green-50 text-green-700 border border-green-200'}">${p.stock} kg stok</span>
-      </div>
-      <div class="mt-3">
-        <div class="font-extrabold leading-tight">${p.name}</div>
-        <div class="font-mono text-[13px] font-bold text-[#16a34a] mt-1">${formatRp(p.price)}/kg</div>
-        <div class="text-[11px] text-green-700/50 font-mono mt-1">${formatRp(p.price/10)}/ons • ${formatRp(p.price/1000)}/gr</div>
-      </div>
-      <div class="mt-3 h-8 rounded-full bg-[#052e16] text-white grid place-items-center text-[11px] font-bold tracking-wide group-hover:bg-[#16a34a]">TAP + ONS</div>
-    </div>
-  `).join('');
+const grid=document.getElementById('productGrid');
+grid.innerHTML=products.map(p=>`
+<div class="card">
+<div style="font-size:30px">${p.emoji}</div>
+<h3>${p.name}</h3>
+<div class="price">Rp ${p.price.toLocaleString()}/kg</div>
+<div style="font-size:11px;color:#666">Rp ${(p.price/10).toLocaleString()}/ons</div>
+<button class="btn" onclick="openModal(${p.id})">Pilih</button>
+</div>
+`).join('');
 }
-
-function openQty(id){
-  activeProduct = products.find(x=>x.id===id);
-  if(!activeProduct) return;
-  activeUnit='ons';
-  document.getElementById('modalName').textContent = activeProduct.name;
-  document.getElementById('modalPrice').textContent = formatRp(activeProduct.price)+' / kg';
-  document.getElementById('stockInfo').textContent = activeProduct.stock+' kg';
-  document.getElementById('qtyInput').value='';
-  updateUnitUI();
-  calcModal();
-  document.getElementById('qtyModal').classList.remove('hidden');
-  setTimeout(()=>document.getElementById('qtyInput').focus(),100);
+function openModal(id){
+currentProduct=products.find(p=>p.id===id);
+document.getElementById('modalName').innerText=currentProduct.name;
+document.getElementById('modalPrice').innerText=`Rp ${currentProduct.price.toLocaleString()}/kg = Rp ${(currentProduct.price/10).toLocaleString()}/ons`;
+document.getElementById('qtyInput').value=1;
+updateModal();
+document.getElementById('modal').classList.add('active');
 }
-function closeQty(){ document.getElementById('qtyModal').classList.add('hidden'); }
-function setUnit(u){ activeUnit=u; updateUnitUI(); calcModal(); }
-function updateUnitUI(){
-  document.querySelectorAll('.unitBtn').forEach(b=>b.className='unitBtn h-10 rounded-full border-2 font-bold text-sm border-green-200 bg-white');
-  const active = document.getElementById('btn-'+activeUnit);
-  if(active) active.className='unitBtn h-10 rounded-full border-2 font-bold text-sm bg-[#16a34a] border-[#16a34a] text-white';
-  document.getElementById('unitLabel').textContent = activeUnit.toUpperCase();
+function closeModal(){document.getElementById('modal').classList.remove('active');}
+function changeQty(d){
+let v=parseInt(document.getElementById('qtyInput').value)||1;
+v+=d; if(v<1)v=1; document.getElementById('qtyInput').value=v; updateModal();
 }
-function quickAdd(v){
-  const input=document.getElementById('qtyInput');
-  const cur=parseFloat(input.value)||0;
-  input.value = cur + v;
-  calcModal();
+function setQty(v){document.getElementById('qtyInput').value=v; updateModal();}
+function updateModal(){
+if(!currentProduct)return;
+let qty=parseInt(document.getElementById('qtyInput').value)||1;
+let mode=document.querySelector('input[name="mode"]:checked').value;
+let gram,kg,total,ons;
+if(mode==='ons'){
+ons=qty; gram=ons*100; kg=ons/10; total=(currentProduct.price/10)*ons;
+document.getElementById('konversi').innerHTML=`${ons} ons = ${gram} gram = ${kg} kg`;
+}else{
+kg=qty; ons=kg*10; gram=kg*1000; total=currentProduct.price*kg;
+document.getElementById('konversi').innerHTML=`${kg} kg = ${ons} ons = ${gram} gram`;
 }
-function getGram(){
-  const val=parseFloat(document.getElementById('qtyInput').value)||0;
-  if(activeUnit==='ons') return val*100;
-  if(activeUnit==='kg') return val*1000;
-  return val;
+document.getElementById('modalTotal').innerText=`Rp ${total.toLocaleString()}`;
 }
-function calcModal(){
-  const gram=getGram();
-  const pricePerGram = activeProduct ? activeProduct.price/1000 : 0;
-  const total = gram*pricePerGram;
-  document.getElementById('convertText').textContent = gram>=1000? (gram/1000)+' kg ('+gram+' gr)' : gram+' gr' + (activeUnit==='ons' ? ' • '+(gram/100)+' ons' : '');
-  document.getElementById('priceCalc').textContent = formatRp(total) + (gram>0? ' • '+Math.round(gram)+' gr' : '');
-  document.getElementById('priceCalc').dataset.total = total;
-  document.getElementById('priceCalc').dataset.gram = gram;
-}
-
 function addToCart(){
-  const gram = parseFloat(document.getElementById('priceCalc').dataset.gram)||0;
-  const total = parseFloat(document.getElementById('priceCalc').dataset.total)||0;
-  if(gram<=0){ alert('Masukkan jumlah dulu, contoh 7 untuk 7 ons'); return; }
-  if(gram/1000 > activeProduct.stock){ alert('Stok tidak cukup! Sisa '+activeProduct.stock+' kg'); return; }
-  const existing = cart.find(c=>c.id===activeProduct.id);
-  if(existing){
-    existing.gram += gram;
-    existing.total += total;
-  }else{
-    cart.push({id:activeProduct.id, name:activeProduct.name, gram, total, pricePerKg:activeProduct.price});
-  }
-  renderCart();
-  closeQty();
+let qty=parseInt(document.getElementById('qtyInput').value)||1;
+let mode=document.querySelector('input[name="mode"]:checked').value;
+let ons,kg,gram,total;
+if(mode==='ons'){ons=qty; kg=ons/10; gram=ons*100; total=(currentProduct.price/10)*ons;}
+else{kg=qty; ons=kg*10; gram=kg*1000; total=currentProduct.price*kg;}
+cart.push({name:currentProduct.name,ons,kg,gram,total,price:currentProduct.price});
+closeModal(); renderCart();
 }
-
 function renderCart(){
-  const list=document.getElementById('cartList');
-  if(cart.length===0){
-    list.innerHTML = '<div class="py-10 text-center text-sm text-green-800/40">Belum ada item. Tap produk di kiri, contoh pilih <b>7 ons</b> untuk 700gr.</div>';
-  }else{
-    list.innerHTML = cart.map((c,i)=>`
-      <div class="flex items-center justify-between p-3 rounded-xl border border-green-100 bg-white">
-        <div>
-          <div class="font-bold text-sm">${c.name}</div>
-          <div class="text-[11px] font-mono text-green-700/70">${c.gram>=1000 ? (c.gram/1000).toFixed(2)+' kg' : c.gram+' gr'} • ${c.gram>=100? (c.gram/100)+' ons' : ''} • ${formatRp(c.pricePerKg)}/kg</div>
-        </div>
-        <div class="text-right">
-          <div class="font-mono font-bold text-sm">${formatRp(c.total)}</div>
-          <button onclick="removeCart(${i})" class="text-[11px] text-red-600 font-bold hover:underline">hapus</button>
-        </div>
-      </div>
-    `).join('');
-  }
-  const subtotal = cart.reduce((s,c)=>s+c.total,0);
-  document.getElementById('subtotalText').textContent = formatRp(subtotal);
-  document.getElementById('totalText').textContent = formatRp(subtotal);
-  calcChange();
+const list=document.getElementById('cartList');
+if(cart.length===0){list.innerHTML='<p style="color:#999;text-align:center;padding:20px">Keranjang kosong</p>';}
+else{
+list.innerHTML=cart.map((c,i)=>`
+<div class="cart-item">
+<div><b>${c.name}</b><br><small>${c.ons} ons (${c.gram}gr) = ${c.kg}kg</small></div>
+<div style="text-align:right">Rp ${c.total.toLocaleString()}<br><button onclick="hapus(${i})" style="color:red;border:none;background:none">hapus</button></div>
+</div>
+`).join('');
 }
-
-function removeCart(i){ cart.splice(i,1); renderCart(); }
-function clearCart(){ if(cart.length && confirm('Kosongkan keranjang?')){ cart=[]; renderCart(); } }
-
-function calcChange(){
-  const total = cart.reduce((s,c)=>s+c.total,0);
-  const cash = parseFloat(document.getElementById('cashInput').value)||0;
-  const change = cash-total;
-  const box=document.getElementById('changeBox');
-  const warn=document.getElementById('cashWarn');
-  if(cash>0){
-    box.classList.remove('hidden');
-    document.getElementById('changeText').textContent = formatRp(change);
-    if(change<0){ box.className='mt-2 p-3 rounded-xl bg-red-600 text-white flex justify-between items-center'; warn.classList.remove('hidden'); }
-    else{ box.className='mt-2 p-3 rounded-xl bg-[#052e16] text-white flex justify-between items-center'; warn.classList.add('hidden'); }
-  }else{
-    box.classList.add('hidden'); warn.classList.add('hidden');
-  }
+let total=cart.reduce((s,c)=>s+c.total,0);
+document.getElementById('totalRp').innerText='Rp '+total.toLocaleString();
+document.getElementById('cartInfo').innerText=`Keranjang: ${cart.length} item | Rp ${total.toLocaleString()}`;
+updateKembalian();
 }
-
-function checkout(){
-  if(cart.length===0){ alert('Keranjang kosong'); return; }
-  const total = cart.reduce((s,c)=>s+c.total,0);
-  const cash = parseFloat(document.getElementById('cashInput').value)||0;
-  if(cash < total){ alert('Tunai kurang!'); return; }
-  const change = cash-total;
-  // kurangi stok
-  cart.forEach(c=>{
-    const p=products.find(x=>x.id===c.id);
-    if(p) p.stock = Math.max(0, p.stock - c.gram/1000);
-  });
-  saveProducts();
-  // simpan history
-  const trx = {
-    id: Date.now(),
-    date: new Date().toISOString(),
-    items: cart,
-    total,
-    cash,
-    change
-  };
-  history.unshift(trx);
-  saveHistory();
-  // render struk
-  const struk = document.getElementById('strukArea');
-  struk.innerHTML = `
-    <div class="text-center border-b border-dashed pb-3 mb-3">
-      <div class="font-extrabold text-[16px]">MANJACK RUKO SAYUR</div>
-      <div class="text-[11px]">Jl. Sayur Segar No. 12 • 0812-xxxx-xxxx</div>
-      <div class="text-[11px]">${new Date().toLocaleString('id-ID')}</div>
-    </div>
-    ${cart.map(c=>`<div class="flex justify-between"><span>${c.name} (${c.gram>=1000? (c.gram/1000)+'kg' : c.gram+'gr'})</span><span>${formatRp(c.total)}</span></div>`).join('')}
-    <div class="border-t border-dashed mt-3 pt-3 space-y-1">
-      <div class="flex justify-between font-bold"><span>Total</span><span>${formatRp(total)}</span></div>
-      <div class="flex justify-between"><span>Tunai</span><span>${formatRp(cash)}</span></div>
-      <div class="flex justify-between font-bold text-[14px]"><span>Kembali</span><span>${formatRp(change)}</span></div>
-    </div>
-    <div class="text-center mt-4 text-[10px]">Terima kasih! Sayur segar tiap hari 🌱<br/>7 ons = 700gr • 10 ons = 1kg</div>
-  `;
-  struk.classList.remove('hidden');
-  struk.classList.add('print-only');
-  window.print();
-  setTimeout(()=>{
-    cart=[];
-    document.getElementById('cashInput').value='';
-    renderCart(); renderProducts();
-    struk.classList.add('hidden');
-    alert('Transaksi berhasil! Omzet tersimpan. Kembalian: '+formatRp(change));
-  },300);
+function hapus(i){cart.splice(i,1);renderCart();}
+function kosongkan(){cart=[];renderCart();document.getElementById('bayarInput').value='';document.getElementById('kembalian').innerText='';}
+function updateKembalian(){
+let total=cart.reduce((s,c)=>s+c.total,0);
+let bayar=parseInt(document.getElementById('bayarInput').value)||0;
+if(bayar>0){
+let kembali=bayar-total;
+document.getElementById('kembalian').innerText=kembali>=0?`Kembalian: Rp ${kembali.toLocaleString()}`:`Kurang: Rp ${Math.abs(kembali).toLocaleString()}`;
+document.getElementById('kembalian').style.color=kembali>=0?'green':'red';
 }
-
-// SETTINGS
-function openSettings(){
-  const list=document.getElementById('settingsList');
-  list.innerHTML = products.map((p,idx)=>`
-    <div class="flex items-center gap-3 p-3 rounded-xl border border-green-100 bg-[#f7fef9]">
-      <div class="flex-1">
-        <div class="font-bold text-sm">${p.name}</div>
-        <div class="text-[11px] font-mono text-green-700/60">ID: ${p.id}</div>
-      </div>
-      <div class="flex items-center gap-2">
-        <input type="number" value="${p.price}" oninput="updateProd(${idx},'price',this.value)" class="w-[110px] h-9 px-2 rounded-full border font-mono text-sm font-bold">
-        <input type="number" step="0.1" value="${p.stock}" oninput="updateProd(${idx},'stock',this.value)" class="w-[70px] h-9 px-2 rounded-full border font-mono text-sm font-bold">
-        <span class="text-[11px] font-mono">Rp/kg • stok kg</span>
-      </div>
-    </div>
-  `).join('');
-  document.getElementById('settingsModal').classList.remove('hidden');
 }
-function closeSettings(){ document.getElementById('settingsModal').classList.add('hidden'); renderProducts(); }
-function updateProd(idx, field, val){
-  if(field==='price') products[idx].price = parseFloat(val)||0;
-  if(field==='stock') products[idx].stock = parseFloat(val)||0;
-  saveProducts();
+document.getElementById('bayarInput').addEventListener('input',updateKembalian);
+function bayar(){
+if(cart.length===0){alert('Keranjang kosong Bos!');return;}
+let total=cart.reduce((s,c)=>s+c.total,0);
+let bayarVal=parseInt(document.getElementById('bayarInput').value)||0;
+if(bayarVal<total){alert('Uang kurang Bos!');return;}
+let kembali=bayarVal-total;
+let struk=`MANJACK RUKO SAYUR\nTanjungselor\n\n`+cart.map(c=>`${c.name} ${c.ons}ons(${c.gram}gr) Rp${c.total.toLocaleString()}`).join('\n')+`\n\nTotal: Rp${total.toLocaleString()}\nBayar: Rp${bayarVal.toLocaleString()}\nKembalian: Rp${kembali.toLocaleString()}\n\nTerima kasih Bos!`;
+alert(struk);
+if(confirm('Kirim struk via WA?')){window.open('https://wa.me/?text='+encodeURIComponent(struk));}
+kosongkan();
 }
-function resetDefault(){
-  if(confirm('Reset ke harga default Manjack?')){
-    products = structuredClone(DEFAULT_PRODUCTS);
-    saveProducts();
-    openSettings();
-    renderProducts();
-  }
-}
-
-// HISTORY
-function openHistory(){
-  const totalOmzet = history.reduce((s,t)=>s+t.total,0);
-  document.getElementById('omzetTotal').textContent = 'Total Omzet: '+formatRp(totalOmzet)+' • '+history.length+' transaksi';
-  const list=document.getElementById('historyList');
-  if(history.length===0) list.innerHTML='<div class="p-6 text-center text-sm text-green-800/40">Belum ada transaksi</div>';
-  else list.innerHTML = history.map(h=>`
-    <div class="p-3 rounded-xl border bg-white">
-      <div class="flex justify-between text-[11px] font-mono">
-        <span>${new Date(h.date).toLocaleString('id-ID')}</span>
-        <span class="font-bold">${formatRp(h.total)}</span>
-      </div>
-      <div class="text-[12px] mt-1">${h.items.map(i=> i.name+' '+ (i.gram>=1000? (i.gram/1000)+'kg' : i.gram+'gr') ).join(', ')}</div>
-      <div class="text-[11px] font-mono text-green-700/60 mt-1">Tunai ${formatRp(h.cash)} • Kembali ${formatRp(h.change)}</div>
-    </div>
-  `).join('');
-  document.getElementById('historyModal').classList.remove('hidden');
-}
-function closeHistory(){ document.getElementById('historyModal').classList.add('hidden'); }
-function clearHistory(){
-  if(confirm('Hapus semua riwayat?')){
-    history=[]; saveHistory(); openHistory();
-  }
-}
-
 renderProducts();
-renderCart();
 </script>
 </body>
 </html>

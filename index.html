@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manjack Ruko Sayur - Timbang Per Ons</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16a34a">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,Segoe UI,Roboto,sans-serif}
+body{background:#fefce8;color:#422006;padding-bottom:90px}
+header{background:#16a34a;color:#fff;padding:14px 16px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:18px}
+header span{font-size:11px;background:#facc15;color:#000;padding:4px 10px;border-radius:999px;font-weight:800}
+.info{background:#fef9c3;padding:10px 16px;font-size:12px;text-align:center;border-bottom:2px solid #facc15;font-weight:600}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+.card{background:#fff;border:1px solid #e7e5e4;border-radius:14px;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.card b{display:block;font-size:14px}
+.price{color:#16a34a;font-weight:800;font-size:13px;margin:5px 0}
+.btn{flex:1;padding:7px 2px;border-radius:8px;border:0;font-size:11px;font-weight:700;cursor:pointer}
+.btn-ons{background:#dcfce7;color:#166534}
+.btn-kg{background:#fef9c3;color:#422006}
+.btn-add{background:#16a34a;color:#fff;width:100%;margin-top:8px;padding:10px;border-radius:10px;font-weight:800}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.modal.open{display:flex}
+.sheet{background:#fff;width:100%;max-width:480px;border-radius:22px 22px 0 0;padding:18px;max-height:88vh;overflow:auto}
+.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #e7e5e4;font-size:13px}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.quick button{padding:9px 13px;border-radius:999px;border:1px solid #bbf7d0;background:#f0fdf4;font-weight:700}
+input{width:100%;padding:12px;border:1.5px solid #d6d3d1;border-radius:12px;font-size:16px;margin:8px 0}
+.total{background:#16a34a;color:#fff;padding:14px;border-radius:14px;text-align:center;margin:12px 0;font-size:18px;font-weight:800}
+.cart-btn{position:fixed;bottom:14px;left:12px;right:12px;background:#000;color:#fff;padding:16px;border-radius:16px;text-align:center;font-weight:800;z-index:20;cursor:pointer}
+.calc-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px;margin:10px 0;font-size:13px;line-height:1.5}
+</style>
+</head>
+<body>
+<header><h1>🥬 Manjack Sayur</h1><span>1kg = 10 ons</span></header>
+<div class="info">Rumus: Harga per ons = Harga/kg ÷ 10 | 7 ons = 0.7kg = 700gr</div>
+<div class="grid" id="grid"></div>
+<div class="cart-btn" onclick="openCart()">🛒 Keranjang: <span id="cartCount">0</span> | Rp <span id="cartTotal">0</span></div>
+
+<div class="modal" id="weightModal">
+<div class="sheet">
+<h3 id="mTitle">Timbang</h3>
+<p style="font-size:12px;color:#57534e;margin:4px 0 8px" id="mInfo"></p>
+<div class="calc-box" id="calcBox">Masukkan jumlah ons Bos KH...</div>
+<label style="font-size:12px;font-weight:800">Berapa ons? (contoh 7 = 7 ons)</label>
+<input id="onsInput" type="number" inputmode="decimal" step="0.1" placeholder="Misal: 7" oninput="hitung()">
+<div class="quick">
+<button onclick="setOns(1)">1 ons</button>
+<button onclick="setOns(2)">2 ons</button>
+<button onclick="setOns(2.5)">2.5 ons</button>
+<button onclick="setOns(5)">½ kg (5 ons)</button>
+<button onclick="setOns(10)">1 kg (10 ons)</button>
+<button onclick="setOns(15)">1.5 kg (15 ons)</button>
+<button onclick="setOns(20)">2 kg (20 ons)</button>
+</div>
+<div style="display:flex;gap:8px;margin-top:10px">
+<button style="flex:1;padding:12px;border-radius:12px;border:1px solid #d6d3d1;background:#fff;font-weight:700" onclick="closeModal('weightModal')">Batal</button>
+<button style="flex:1;padding:12px;border-radius:12px;border:0;background:#16a34a;color:#fff;font-weight:800" onclick="addToCart()">Tambah ke Keranjang</button>
+</div>
+</div>
+</div>
+
+<div class="modal" id="cartModal">
+<div class="sheet">
+<h3>🛒 Keranjang - Manjack</h3>
+<div id="cartList" style="margin:12px 0"></div>
+<div class="total" id="cartTotal2">Total: Rp 0</div>
+<label style="font-size:12px;font-weight:800">Bayar Pembeli Rp</label>
+<input id="bayarInput" type="number" placeholder="Misal 50000" oninput="hitungKembali()">
+<div id="kembaliBox" class="calc-box">Kembalian: Rp 0</div>
+<div style="display:flex;gap:8px;margin-top:12px">
+<button style="flex:1;padding:12px;border-radius:12px;border:1px solid #d6d3d1;background:#fff" onclick="closeModal('cartModal')">Tutup</button>
+<button style="flex:1;padding:12px;border-radius:12px;border:0;background:#000;color:#fff;font-weight:800" onclick="cetakStruk()">🖨️ Cetak Struk</button>
+</div>
+<button style="width:100%;margin-top:8px;padding:10px;border:0;background:#fee2e2;color:#b91c1c;border-radius:12px;font-weight:700" onclick="clearCart()">Kosongkan Keranjang</button>
+</div>
+</div>
+
+<script>
+const sayur=[
+{name:"Kangkung",harga:20000},{name:"Bayam",harga:18000},{name:"Sawi Hijau",harga:20000},{name:"Sawi Putih",harga:18000},
+{name:"Kol",harga:15000},{name:"Wortel",harga:20000},{name:"Kentang",harga:20000},{name:"Tomat",harga:18000},
+{name:"Cabe Merah",harga:60000},{name:"Cabe Rawit",harga:70000},{name:"Bawang Merah",harga:40000},{name:"Bawang Putih",harga:38000},
+{name:"Terong",harga:15000},{name:"Timun",harga:12000},{name:"Buncis",harga:20000},{name:"Kacang Panjang",harga:18000},
+{name:"Daun Bawang",harga:30000},{name:"Seledri",harga:40000},{name:"Jahe",harga:35000},{name:"Kunyit",harga:20000},
+{name:"Tahu",harga:1000,satuan:"biji"},{name:"Tempe",harga:6000,satuan:"papan"},{name:"Labu Siam",harga:10000},{name:"Pare",harga:15000}
+];
+let selected=null, cart=[];
+function render(){
+const g=document.getElementById('grid');
+g.innerHTML=sayur.map((s,i)=>`
+<div class="card">
+<b>${s.name}</b>
+<small>${s.satuan?'per '+s.satuan:'per kg'}</small>
+<div class="price">Rp ${s.harga.toLocaleString('id-ID')}${s.satuan?'':'/kg'}<br><span style="font-size:11px;color:#57534e">Rp ${(s.harga/10).toLocaleString('id-ID')}/ons</span></div>
+<div style="display:flex;gap:5px;margin-top:8px">
+<button class="btn btn-ons" onclick="openWeight(${i},'ons')">Per Ons</button>
+<button class="btn btn-kg" onclick="openWeight(${i},'kg')">Per Kg</button>
+</div>
+</div>`).join('');
+}
+function openWeight(idx,type){
+selected=sayur[idx];
+document.getElementById('mTitle').textContent=`Timbang ${selected.name}`;
+document.getElementById('mInfo').textContent=`Harga: Rp ${selected.harga.toLocaleString('id-ID')}/kg = Rp ${(selected.harga/10).toLocaleString('id-ID')}/ons`;
+document.getElementById('onsInput').value='';
+document.getElementById('calcBox').innerHTML='Masukkan jumlah ons Bos KH...';
+document.getElementById('weightModal').classList.add('open');
+if(type==='kg') setOns(10);
+}
+function setOns(v){document.getElementById('onsInput').value=v; hitung();}
+function hitung(){
+const ons=parseFloat(document.getElementById('onsInput').value);
+if(!ons || !selected) return;
+const kg=ons/10; const gram=kg*1000; const total= (selected.harga/10)*ons;
+document.getElementById('calcBox').innerHTML=`${ons} ons = ${kg} kg = ${gram} gram<br>Harga: Rp ${(selected.harga/10).toLocaleString('id-ID')}/ons x ${ons} = <b>Rp ${total.toLocaleString('id-ID')}</b><br>Rumus: ${selected.harga}/10 x ${ons} = ${total}`;
+}
+function addToCart(){
+const ons=parseFloat(document.getElementById('onsInput').value);
+if(!ons){alert('Isi ons dulu Bos KH!');return;}
+const total=(selected.harga/10)*ons;
+cart.push({name:selected.name, ons, kg:ons/10, gram:ons/10*1000, hargaPerOns:selected.harga/10, total});
+closeModal('weightModal'); updateCart(); openCart();
+}
+function updateCart(){
+const total=cart.reduce((a,b)=>a+b.total,0);
+document.getElementById('cartCount').textContent=cart.length;
+document.getElementById('cartTotal').textContent=total.toLocaleString('id-ID');
+document.getElementById('cartTotal2').textContent=`Total: Rp ${total.toLocaleString('id-ID')}`;
+const list=document.getElementById('cartList');
+if(cart.length===0) list.innerHTML='<p style="text-align:center;color:#78716c;font-size:13px">Keranjang kosong Bos KH</p>';
+else list.innerHTML=cart.map((c,i)=>`<div class="row"><span>${i+1}. ${c.name} - ${c.ons} ons (${c.kg}kg)<br><small>Rp ${c.hargaPerOns.toLocaleString('id-ID')}/ons x ${c.ons}</small></span><b>Rp ${c.total.toLocaleString('id-ID')}</b></div>`).join('');
+hitungKembali();
+}
+function openCart(){document.getElementById('cartModal').classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function clearCart(){cart=[];updateCart();}
+function hitungKembali(){
+const total=cart.reduce((a,b)=>a+b.total,0);
+const bayar=parseFloat(document.getElementById('bayarInput').value)||0;
+const kembali=bayar-total;
+document.getElementById('kembaliBox').innerHTML=`Total: Rp ${total.toLocaleString('id-ID')}<br>Bayar: Rp ${bayar.toLocaleString('id-ID')}<br><b>Kembalian: Rp ${kembali.toLocaleString('id-ID')}</b>`;
+}
+function cetakStruk(){
+const total=cart.reduce((a,b)=>a+b.total,0);
+let struk=`MANJACK RUKO SAYUR - TANJUNG SELOR\n1kg = 10 ons\n------------------------------\n`;
+cart.forEach(c=>{struk+=`${c.name} ${c.ons}ons (${c.kg}kg) Rp ${c.total.toLocaleString('id-ID')}\n`;});
+struk+=`------------------------------\nTOTAL: Rp ${total.toLocaleString('id-ID')}\nTerima kasih Bos KH!\n`;
+const w=window.open('','_blank'); w.document.write('<pre>'+struk+'</pre>'); w.print();
+}
+render();
+</script>
+</body>
+</html>
